@@ -2,19 +2,43 @@
 
 namespace App\Entity;
 
+use DateTime;
+use DateTimeZone;
+use Exception;
+
 class Flight
 {
-    private Airport $fromAirport;
-    private string $fromTime;
-    private Airport $toAirport;
-    private string $toTime;
+    private const DATE_TIME_FORMAT = 'Y-m-d H:i:sP';
 
-    public function __construct(Airport $fromAirport, string $fromTime, Airport $toAirport, string $toTime)
+    private Airport $fromAirport;
+    private DateTime $fromTime;
+    private Airport $toAirport;
+    private DateTime $toTime;
+
+    /**
+     * @throws Exception
+     */
+    public function __construct(
+        Airport $fromAirport,
+        string  $fromDate,
+        string  $fromTime,
+        Airport $toAirport,
+        string  $toDate,
+        string  $toTime,
+    )
     {
         $this->fromAirport = $fromAirport;
-        $this->fromTime = $fromTime;
+        $this->fromTime = self::getDateTime($fromDate, $fromTime, $fromAirport);
         $this->toAirport = $toAirport;
-        $this->toTime = $toTime;
+        $this->toTime = self::getDateTime($toDate, $toTime, $toAirport);;
+    }
+
+    /**
+     * @throws Exception
+     */
+    private static function getDateTime(string $date, string $time, Airport $airport): DateTime
+    {
+        return new DateTime("$date $time", new DateTimeZone($airport->getTimeZone()));
     }
 
     public function getFromAirport(): Airport
@@ -24,7 +48,7 @@ class Flight
 
     public function getFromTime(): string
     {
-        return $this->fromTime;
+        return $this->fromTime->format(self::DATE_TIME_FORMAT);
     }
 
     public function getToAirport(): Airport
@@ -34,18 +58,11 @@ class Flight
 
     public function getToTime(): string
     {
-        return $this->toTime;
+        return $this->toTime->format(self::DATE_TIME_FORMAT);
     }
 
     public function calculateDurationMinutes(): int
     {
-        return $this->calculateMinutesFromStartDay($this->toTime) - $this->calculateMinutesFromStartDay($this->fromTime);
-    }
-
-    private function calculateMinutesFromStartDay(string $time): int
-    {
-        [$hour, $minutes] = explode(':', $time, 2);
-
-        return 60 * (int) $hour + (int) $minutes;
+        return ($this->toTime->getTimestamp() - $this->fromTime->getTimestamp()) / 60;
     }
 }
